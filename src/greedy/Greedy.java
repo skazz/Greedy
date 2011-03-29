@@ -12,7 +12,7 @@ public class Greedy {
 	OutputStreamWriter writer;
 	BufferedReader lreader, vreader, areader;
 
-	Markt ankauf, verkauf;
+	Markt markt;
 	String name, pw;
 	int delay;
 
@@ -66,6 +66,7 @@ public class Greedy {
 			writer = new OutputStreamWriter(connection.getOutputStream());
 			writer.write(loginContent);
 			writer.flush();
+			
 
 			lreader = new BufferedReader(new InputStreamReader(
 					connection.getInputStream()));
@@ -73,6 +74,7 @@ public class Greedy {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
 	}
 
 	private void logout() {
@@ -96,22 +98,20 @@ public class Greedy {
 			areader = new BufferedReader(new InputStreamReader(
 					ankaufURL.openStream()));
 
-			if (verkauf == null)
-				verkauf = new Markt(name);
-			verkauf.update(vreader);
-
-			if (ankauf == null)
-				ankauf = new Markt(name);
-			ankauf.update(areader);
+			if (markt == null)
+				markt = new Markt(name, manager);
+			markt.update(areader, vreader);
 
 			System.out.println("done");
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	private void trade() {
-		verkauf.tradeWithCPU();
+		markt.tradeWithCPU();
+		markt.recreateOffers();
 	}
 	
 	private void sleep() {
@@ -135,10 +135,12 @@ public class Greedy {
 		while (true) {
 			try {
 				greedy.login();
-
+				
 				greedy.update();
 
 				greedy.trade();
+				
+				greedy.update();
 
 				greedy.logout();
 				
