@@ -72,7 +72,6 @@ public class Angebot {
 	
 	public void trade() {
 		try {
-			System.out.println(tradeMessage());
 			url.openStream();
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -1,38 +1,27 @@
 package greedy;
 
-import java.io.*;
 import java.net.*;
 import java.util.*;
 
 public class Greedy {
-
-	CookieManager manager;
-	URL loginURL, ankaufURL, verkaufURL;
-	HttpURLConnection connection;
-	OutputStreamWriter writer;
-	BufferedReader lreader, vreader, areader;
-
-	Markt markt;
-	String name, pw;
+	
+	URL url;
+	Haendler haendler;
+	String name, password;
 	int delay;
 
 	private Greedy() {
 		try {
-			loginURL = new URL("http://www.worldofminecraft.eu/?p=login");
-			verkaufURL = new URL(
-					"http://www.worldofminecraft.eu/?p=marktplatz&s=waren_verkaufen");
-			ankaufURL = new URL(
-					"http://www.worldofminecraft.eu/?p=marktplatz&s=waren_kaufen");
+			url = new URL("http://www.worldofminecraft.eu");
 
-			manager = new CookieManager();
-			manager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
-			CookieHandler.setDefault(manager);
-
+			haendler = new Haendler(url);
+			
 			delay = 1800000;
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
 	}
+
 	
 	private void init() {
 		Scanner s = new Scanner(System.in);
@@ -40,78 +29,15 @@ public class Greedy {
 		System.out.print("WoM-Login    : ");
 		name = s.next();
 		System.out.print("WoM-Password : ");
-		pw = s.next();
+		password = s.next();
 		
+		haendler.register(name, password);
 		try {
 			System.out.print("\nIntervall(minutes) : ");
 			delay = s.nextInt() * 60000;
 		} catch (InputMismatchException e) {
 			
 		}
-	}
-
-	private void login() {
-		try {
-			String loginContent = "spieler=" + name + "&passwort=" + pw + "&button=Login";
-			
-			connection = (HttpURLConnection) loginURL.openConnection();
-			connection.setRequestMethod("POST");
-			connection.setDoInput(true);
-			connection.setDoOutput(true);
-			connection.setUseCaches(true);
-			connection.setRequestProperty("Content-Type",
-					"application/x-www-form-urlencoded");
-			connection.setRequestProperty("Content-Length", Integer.toString(loginContent.length()));
-
-			writer = new OutputStreamWriter(connection.getOutputStream());
-			writer.write(loginContent);
-			writer.flush();
-			
-
-			lreader = new BufferedReader(new InputStreamReader(
-					connection.getInputStream()));
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-	}
-
-	private void logout() {
-		try {
-			writer.close();
-			lreader.close();
-			vreader.close();
-			areader.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void update() {
-		try {
-			System.out.print("Updating...");
-
-			vreader = new BufferedReader(new InputStreamReader(
-					verkaufURL.openStream()));
-
-			areader = new BufferedReader(new InputStreamReader(
-					ankaufURL.openStream()));
-
-			if (markt == null)
-				markt = new Markt(name, manager);
-			markt.update(areader, vreader);
-
-			System.out.println("done");
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void trade() {
-		markt.tradeWithCPU();
-		markt.recreateOffers();
 	}
 	
 	private void sleep() {
@@ -125,31 +51,29 @@ public class Greedy {
 		}
 	}
 	
-
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		System.out.println("Welcome to GREEDY");
-
-		Greedy greedy = new Greedy();
-		greedy.init();
+	private void mainLoop() {
 		while (true) {
-			try {
-				greedy.login();
-				
-				greedy.update();
-
-				greedy.trade();
-				
-				greedy.update();
-
-				greedy.logout();
-				
-				greedy.sleep();
+			try {				
+				haendler.trade();
+				sleep();
 
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(-1);
 			}
 		}
+	}
+	
+	
+	
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		System.out.println("Welcome to GREEDY");
+
+		Greedy greedy = new Greedy();
+		
+		greedy.init();
+		greedy.mainLoop();
 	}
 }
