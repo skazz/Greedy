@@ -79,14 +79,14 @@ public class Angebot {
 	}
 	
 	public String tradeMessage() {
-		String s = (new java.util.Date()).toString();
+		String s;
 		if (url.toString().contains("verkaufen")) {
-			s = s + " : Sold ";
+			s = "Sold ";
 		} else {
-			s = s + " : Bought ";
+			s = "Bought ";
 		}
 		
-		s = s + toString();;
+		s = s + amount + " " + item + " " + prize;
 		
 		return s;
 	}

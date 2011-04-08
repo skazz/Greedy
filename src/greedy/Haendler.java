@@ -1,54 +1,39 @@
 package greedy;
 
+import java.awt.Color;
 import java.io.*;
 import java.net.*;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 
-public class Haendler {
+import javax.swing.JTextArea;
+
+public class Haendler implements Runnable {
 	String name, password;
-	boolean sellCobble, sellSapling, sellWood, sellTorch, sellGlass, sellSand, sellDirt;
-	int minCobble, minSapling, minWood, minTorch, minGlass, minSand, minDirt;
+	int delay;
 	
 	URL url, ankaufURL, verkaufURL, loginURL;
 	CookieManager manager;
+	Ausgabe ausgabe;
 	Markt marktAlt, marktNeu;
 	HashMap<String, Boolean> zuordnung;
 	HashMap<String, Integer> minPrize;
-	
-	
-	public Haendler(URL url) {
-		
-		//test
-		sellCobble = true;
-		minCobble = 20;
-		//wenn gui fertig wech machen
-		
+
+	public Haendler(URL url, Ausgabe ausgabe) {		
 		this.url = url;
-		
+		this.ausgabe = ausgabe;
+
 		zuordnung = new HashMap<String, Boolean>();
-		zuordnung.put("cobble", sellCobble);
-		zuordnung.put("sapling", sellSapling);
-		zuordnung.put("wood", sellWood);
-		zuordnung.put("torch", sellTorch);
-		zuordnung.put("glass", sellGlass);
-		zuordnung.put("sand", sellSand);
-		zuordnung.put("dirt", sellDirt);
-		
+
 		minPrize = new HashMap<String, Integer>();
-		minPrize.put("cobble", minCobble);
-		minPrize.put("sapling", minSapling);
-		minPrize.put("wood", minWood);
-		minPrize.put("torch", minTorch);
-		minPrize.put("glass", minGlass);
-		minPrize.put("sand", minSand);
-		minPrize.put("dirt", minDirt);
-		
+
 		try {
 			loginURL = new URL(url.toString() + "/?p=login");
 			ankaufURL = new URL(url.toString() + "/?p=marktplatz&s=waren_kaufen");
 			verkaufURL = new URL(url.toString() + "/?p=marktplatz&s=waren_verkaufen");
-			
+
 			manager = new CookieManager();
 			manager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
 			CookieHandler.setDefault(manager);
@@ -60,6 +45,10 @@ public class Haendler {
 	public void register(String name, String password) {
 		this.name = name;
 		this.password = password;
+	}
+	
+	public void setDelay(int d) {
+		delay = d;
 	}
 	
 	
@@ -121,9 +110,24 @@ public class Haendler {
 		}
 	}	
 	
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		while (true) {
+			trade();
+			//console.setForeground(Color.BLACK);
+			//console.append(date + " : Sleeping for " + (delay) + " sec\n");
+
+			try {
+			  TimeUnit.SECONDS.sleep( delay );
+			} catch ( InterruptedException e ) { }
+		}
+	}
+	
 	public void trade() {
 		if (login()) {
-			System.out.println("Logged in");
+			//console.setForeground(Color.BLACK);
+			//console.append(date() + " Logged in\n");
 			if (update()) {
 				Vector<Angebot> ankauf, verkauf, mAlt, mNeu, recreate;
 				ankauf = marktNeu.getAnkauf();
@@ -135,7 +139,8 @@ public class Haendler {
 							if (a.getPrize() >= minPrize(a.getItem())) {
 								for (int i = 0; i <= a.getPrize() - minPrize(a.getItem()); i++) {
 									a.trade();
-									System.out.println(a.tradeMessage());
+									//console.setForeground(Color.GREEN);
+									ausgabe.println(a.tradeMessage());
 								}
 							}
 						}
@@ -148,7 +153,8 @@ public class Haendler {
 					recreate = terminatedOffers(mAlt, mNeu);
 
 					for (Angebot a : recreate) {
-						System.out.println((new java.util.Date()).toString() + " : Sold " + a.toString());
+						//console.setForeground(Color.RED);
+						ausgabe.println("Sold " + a.getAmount() + " " + a.getItem() + " " + a.getPrize());
 						createOffer(a);
 					}
 				}
@@ -186,7 +192,8 @@ public class Haendler {
 			reader = new BufferedReader(new InputStreamReader(
 					connection.getInputStream()));
 			
-			System.out.println((new java.util.Date()).toString() + " : Created " + a.toString());
+			//console.setForeground(Color.BLACK);
+			ausgabe.println("Created " + a.getAmount() + " " + a.getItem() + " " + a.getPrize());
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -219,5 +226,13 @@ public class Haendler {
 				o.add(a);
 		}
 		return o;
+	}
+	
+	public void setMin(String key, int value) {
+		minPrize.put(key, value);
+	}
+	
+	public void setSell(String key, boolean value) {
+		zuordnung.put(key, value);
 	}
 }
