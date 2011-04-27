@@ -5,13 +5,14 @@ import java.net.*;
 import java.util.HashMap;
 
 public class Angebot {
-	int amount, prize, id;
 	URL url;
-	String name, item, value;	
+	String name, item, value;
+	int amount, prize, id;
+	boolean verkaufen;
 	
 	static HashMap<String,String> m;
 	
-	public Angebot(String row) {
+	public Angebot(String name, String item, int amount, int prize, int id, boolean verkaufen) {
 		
 		if (m == null) {
 			try {
@@ -30,43 +31,21 @@ public class Angebot {
 			}
 		}
 		
-		String[] s;
-		String u;
-		int offset = 0;
-		
-		s = row.split("\\<.*?\\>");
+		this.id = id;
+		this.name = name;
+		this.item = item;
+		this.amount = amount;
+		this.prize = prize;
+		value = m.get(item);
 		
 		try {
-		u = new String(row.substring(row.lastIndexOf("a href=") + 8, row.length() - 20));
-		url = new URL( "http://www.worldofminecraft.eu/" + u);
+			if (verkaufen)
+				url = new URL( "http://www.worldofminecraft.eu/?p=marktplatz&s=waren_verkaufen&id=" + this.id);
+			else
+				url = new URL( "http://www.worldofminecraft.eu/?p=marktplatz&s=waren_kaufen&id=" + this.id);
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
-		
-		id = Integer.valueOf(row.substring(row.lastIndexOf("&id=") + 4, row.lastIndexOf("&id=") + 9));
-		
-		//anpassung fuer stadt (+1 neuer string vor name)
-		if (row.contains("<font color=\"orange\">"))
-			offset = offset + 1;
-		name = s[1 + offset];
-		
-		//anpassung fuer stadt (nochmal +1 string nach name
-		if (row.contains("<font color=\"orange\">"))
-			offset = offset + 1;
-		
-		item = s[6 + offset];
-		
-		//anpassung fuer item mit durability (+2 strings nach item)
-		//entfernen des leerzeichens zwischen item (durability)
-		if (row.contains("Durability")) {
-			item = item.replaceAll(" ", "");
-			offset = offset + 2;
-		}
-		
-		amount = Integer.valueOf(s[8 + offset]);
-		prize = Integer.valueOf(s[10 + offset].split(" ")[0]);
-		
-		value = m.get(item);
 	}
 	
 	
