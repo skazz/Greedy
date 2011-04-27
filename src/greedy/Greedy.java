@@ -160,11 +160,11 @@ public class Greedy {
 	    minSapling.setName("minSapling");
 	    minSapling.addActionListener(actionListener);
 	    
-	    JCheckBox sellWood = new JCheckBox("sellWood");
-	    sellWood.setName("sellWood");
+	    JCheckBox sellWood = new JCheckBox("sellWoodenplanks");
+	    sellWood.setName("sellWoodenplanks");
 	    sellWood.addItemListener(checkboxListener);
 	    JTextField minWood = new JTextField();
-	    minWood.setName("minWood");
+	    minWood.setName("minWoodenplanks");
 	    minWood.addActionListener(actionListener);
 	    
 	    JCheckBox sellTorch = new JCheckBox("sellTorch");
