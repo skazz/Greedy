@@ -55,7 +55,6 @@ public class Markt {
 					if (line.contains("<tr>")) {
 						for (int i = 0; i < 5; i++) {
 							s[i] = r.readLine();
-							System.out.println(s[i]);
 						}
 
 						name = parseLine(s[0]);
