@@ -9,6 +9,7 @@ import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 
 public class Haendler implements Runnable {
 	String name, password;
@@ -24,6 +25,7 @@ public class Haendler implements Runnable {
 	public Haendler(URL url, Ausgabe ausgabe) {		
 		this.url = url;
 		this.ausgabe = ausgabe;
+		delay = 1800;
 
 		zuordnung = new HashMap<String, Boolean>();
 
@@ -102,7 +104,7 @@ public class Haendler implements Runnable {
 
 			marktAlt = marktNeu;
 			marktNeu = new Markt(areader, vreader);
-
+			
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -158,6 +160,9 @@ public class Haendler implements Runnable {
 						createOffer(a);
 					}
 				}
+				
+				update();
+				ausgabe.setTable(marktNeu.getOffersByName(name));
 			}
 		}
 	}
