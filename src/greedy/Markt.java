@@ -5,10 +5,12 @@ import java.util.*;
 
 public class Markt {
 	Vector<Angebot> ankauf, verkauf;
+	Date date;
 
 	public Markt(BufferedReader a, BufferedReader v) {
 		ankauf = parseHTML(a);
 		verkauf = parseHTML(v);
+		date = new java.util.Date();
 	}
 
 	public void update(BufferedReader a, BufferedReader v) {

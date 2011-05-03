@@ -3,11 +3,13 @@ package greedy;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemListener;
 import java.text.SimpleDateFormat;
+import java.util.Enumeration;
 import java.util.Vector;
 
 import javax.swing.JCheckBox;
@@ -19,6 +21,10 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TableModelListener;
+import javax.swing.plaf.TableHeaderUI;
 import javax.swing.table.*;
 
 public class Ausgabe  {
@@ -27,13 +33,19 @@ public class Ausgabe  {
 	JTextArea console;
 	JTable table;
 	MyTableModel tableModel;
-	JScrollPane scrollPane;
+	JScrollPane scrollPaneConsole, scrollPaneTable;
+	JLabel date;
 
+	Haendler haendler;
+	Vector<Angebot> ownOffers, dealsDone;
+	
 	ActionListener actionListener;
 	ItemListener checkboxListener;
 	ActionListener toggleButtonListener;
-
-
+	TableModelListener myTableModelListener;
+	
+	
+	
 	class MyTableModel extends AbstractTableModel {
 
 		private String[] columnNames = {
@@ -92,25 +104,35 @@ public class Ausgabe  {
 
 
 
-	public Ausgabe() {
+	public Ausgabe(Haendler haendler) {
 
+		this.haendler = haendler;
+		
 		console = new JTextArea("Welcome to Greedy\n");
 		console.setBorder(new javax.swing.border.BevelBorder(1));
 		console.setBackground(Color.LIGHT_GRAY);
 		console.setForeground(Color.BLACK);
+		scrollPaneConsole = new JScrollPane(console);
+		scrollPaneConsole.setPreferredSize(new Dimension(0, 200));
 
 		tableModel = new MyTableModel();
 		table = new JTable(tableModel);
+		//scrollPaneTable = new JScrollPane(table);
 		table.setBorder(new javax.swing.border.BevelBorder(1));
 		table.setBackground(Color.LIGHT_GRAY);
 		table.setForeground(Color.BLACK);
 		
+		ownOffers = new Vector<Angebot>();
+		dealsDone = new Vector<Angebot>();
+		
 	}
 
-	public void addListener(ActionListener actionListener,ItemListener checkboxListener,ActionListener toggleButtonListener) {
-		this.actionListener = actionListener;
-		this.checkboxListener = checkboxListener;
-		this.toggleButtonListener = toggleButtonListener;
+	public void addListener(ActionListener aL,ItemListener cL,ActionListener tBL, TableModelListener mTML) {
+		this.actionListener = aL;
+		this.checkboxListener = cL;
+		this.toggleButtonListener = tBL;
+		this.myTableModelListener = mTML;
+		tableModel.addTableModelListener(mTML);
 	}
 
 	public void print(String s) {
@@ -121,15 +143,41 @@ public class Ausgabe  {
 		console.append(date () + " : " + s + "\n");
 	}
 
-	public void setTable(Vector<Angebot> a) {
+	public void updateTable() {
 		int i = 0;
-		for (Angebot temp : a) {
-			tableModel.setValueAt(temp.getAmount(), i, 0);
-			tableModel.setValueAt(temp.getItem(), i, 1);
-			tableModel.setValueAt(temp.getPrize(), i, 2);
+		for (Angebot a : ownOffers) {
+			tableModel.setValueAt(a.getAmount(), i, 0);
+			tableModel.setValueAt(a.getItem(), i, 1);
+			tableModel.setValueAt(a.getPrize(), i, 2);
 			tableModel.setValueAt(false, i, 3);
 			i++;
 		}
+	}
+	
+	public void update() {
+		Vector<Angebot> tempOwn = haendler.getOwnOffers();
+		Vector<Angebot> tempDone = haendler.dealsDone;
+		for (Angebot a : ownOffers) {
+			if (!tempOwn.contains(a))
+				println(a.tradeMessage());
+		}
+		
+		for (Angebot a : tempOwn) {
+			if (!ownOffers.contains(a))
+				println("Created " + a.toString());
+		}
+		
+		
+		for (Angebot a : tempDone) {
+			if (!dealsDone.contains(a))
+				println(a.tradeMessage());
+		}
+		
+		ownOffers = tempOwn;
+		dealsDone = tempDone;
+		
+		date.setText(date());
+		updateTable();
 	}
 
 	public JTextArea getConsole() {
@@ -141,7 +189,7 @@ public class Ausgabe  {
 	}
 
 	private static String date() {
-		SimpleDateFormat f = new SimpleDateFormat("hh:mm:ss");
+		SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
 		return f.format(new java.util.Date());
 	}
 
@@ -206,6 +254,11 @@ public class Ausgabe  {
 				addComponent( c, gbl, new JLabel(" ")  , 2, 1, 1, 1, 0  , 0   );
 
 
+				//lastupdated
+				JLabel dateLabel = new JLabel("Last updated :");
+				date = new JLabel("N/A");
+				addComponent( c, gbl, dateLabel        , 0, 2, 1, 1, 0  , 0   );
+				addComponent( c, gbl, date             , 1, 2, 1, 1, 0  , 0   );
 
 				JCheckBox sellCobble = new JCheckBox("sellCobble");
 				sellCobble.setName("sellCobble");
@@ -256,34 +309,33 @@ public class Ausgabe  {
 				minDirt.setName("minDirt");
 				minDirt.addActionListener(actionListener);
 
-
-				addComponent( c, gbl, sellCobble      , 0, 2, 1, 1, 0  , 0   );
-				addComponent( c, gbl, minCobble       , 1, 2, 1, 1, 0  , 0   );
-				addComponent( c, gbl, sellSapling     , 0, 3, 1, 1, 0  , 0   );
-				addComponent( c, gbl, minSapling      , 1, 3, 1, 1, 0  , 0   );
-				addComponent( c, gbl, sellWood        , 0, 4, 1, 1, 0  , 0   );
-				addComponent( c, gbl, minWood         , 1, 4, 1, 1, 0  , 0   );
-				addComponent( c, gbl, sellTorch       , 0, 5, 1, 1, 0  , 0   );
-				addComponent( c, gbl, minTorch        , 1, 5, 1, 1, 0  , 0   );
-				addComponent( c, gbl, sellGlass       , 0, 6, 1, 1, 0  , 0   );
-				addComponent( c, gbl, minGlass        , 1, 6, 1, 1, 0  , 0   );
-				addComponent( c, gbl, sellSand        , 0, 7, 1, 1, 0  , 0   );
-				addComponent( c, gbl, minSand         , 1, 7, 1, 1, 0  , 0   );
-				addComponent( c, gbl, sellDirt        , 0, 8, 1, 1, 0  , 0   );
-				addComponent( c, gbl, minDirt         , 1, 8, 1, 1, 0  , 0   );
-
-
+				addComponent( c, gbl, new JLabel(" ") , 0, 3, 0, 1, 0  , 0   );
+				addComponent( c, gbl, sellCobble      , 0, 4, 1, 1, 0  , 0   );
+				addComponent( c, gbl, minCobble       , 1, 4, 1, 1, 0  , 0   );
+				addComponent( c, gbl, sellSapling     , 0, 5, 1, 1, 0  , 0   );
+				addComponent( c, gbl, minSapling      , 1, 5, 1, 1, 0  , 0   );
+				addComponent( c, gbl, sellWood        , 0, 6, 1, 1, 0  , 0   );
+				addComponent( c, gbl, minWood         , 1, 6, 1, 1, 0  , 0   );
+				addComponent( c, gbl, sellTorch       , 0, 7, 1, 1, 0  , 0   );
+				addComponent( c, gbl, minTorch        , 1, 7, 1, 1, 0  , 0   );
+				addComponent( c, gbl, sellGlass       , 0, 8, 1, 1, 0  , 0   );
+				addComponent( c, gbl, minGlass        , 1, 8, 1, 1, 0  , 0   );
+				addComponent( c, gbl, sellSand        , 0, 9, 1, 1, 0  , 0   );
+				addComponent( c, gbl, minSand         , 1, 9, 1, 1, 0  , 0   );
+				addComponent( c, gbl, sellDirt        , 0, 10, 1, 1, 0  , 0   );
+				addComponent( c, gbl, minDirt         , 1, 10, 1, 1, 0  , 0   );
+				
 				//tabelle mit eigenen angeboten
-				addComponent( c, gbl, table , 2, 2, 6, 10, 0  , 0   );
+				addComponent( c, gbl, table.getTableHeader() , 2, 3, 6, 1, 0  , 0   );
+				addComponent( c, gbl, table           , 2, 4, 6, 8, 0  , 0   );
 
 
 				//textarea zur ausgabe
-				addComponent( c, gbl, new JLabel(" ")  , 0, 9, 0, 1, 0  , 0   );
-				addComponent( c, gbl, new JLabel(" ")  , 0, 10, 0, 1, 0  , 0   );
 				addComponent( c, gbl, new JLabel(" ")  , 0, 12, 0, 1, 0  , 0   );
-				addComponent( c, gbl, console , 0, 13, 0, 0, 0  , 1   );
+				addComponent( c, gbl, scrollPaneConsole, 0, 13, 0, 0, 0  , 1   );
 
-				f.setSize( 640, 300 );
+				//f.setSize( 640, 480 );
+				f.pack();
 				f.setVisible( true );
 			}
 		});

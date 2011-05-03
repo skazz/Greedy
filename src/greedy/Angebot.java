@@ -9,6 +9,7 @@ public class Angebot {
 	String name, item, value;
 	int amount, prize, id;
 	boolean verkaufen;
+	boolean recreate = false;
 	
 	static HashMap<String,String> m;
 	
@@ -95,7 +96,7 @@ public class Angebot {
 	}
 	
 	@Override public String toString() {
-		return String.valueOf(id) + ". " + String.valueOf(amount) + " " + item + " " + String.valueOf(prize) + " " + name + " " + value;
+		return String.valueOf(id) + ". " + String.valueOf(amount) + " " + item + " " + String.valueOf(prize) + " " + name + " " + value + " " + recreate;
 	}
 	
 	@Override public boolean equals(Object o) {

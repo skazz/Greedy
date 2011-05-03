@@ -1,15 +1,10 @@
 package greedy;
 
-import java.awt.Color;
 import java.io.*;
 import java.net.*;
-import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
-
-import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
 
 public class Haendler implements Runnable {
 	String name, password;
@@ -17,21 +12,24 @@ public class Haendler implements Runnable {
 	
 	URL url, ankaufURL, verkaufURL, loginURL;
 	CookieManager manager;
-	Ausgabe ausgabe;
+	Controller controller;
 	Markt marktAlt, marktNeu;
+	Vector<Angebot> ownOffers, ownOffersOld, dealsDone;
 	HashMap<String, Boolean> zuordnung;
 	HashMap<String, Integer> minPrize;
 
-	public Haendler(URL url, Ausgabe ausgabe) {		
-		this.url = url;
-		this.ausgabe = ausgabe;
+	public Haendler(Controller controller) {		
 		delay = 1800;
+		this.controller = controller;
 
 		zuordnung = new HashMap<String, Boolean>();
 
 		minPrize = new HashMap<String, Integer>();
+		
+		dealsDone = new Vector<Angebot>();
 
 		try {
+			url = new URL("http://www.worldofminecraft.eu");
 			loginURL = new URL(url.toString() + "/?p=login");
 			ankaufURL = new URL(url.toString() + "/?p=marktplatz&s=waren_kaufen");
 			verkaufURL = new URL(url.toString() + "/?p=marktplatz&s=waren_verkaufen");
@@ -105,6 +103,9 @@ public class Haendler implements Runnable {
 			marktAlt = marktNeu;
 			marktNeu = new Markt(areader, vreader);
 			
+			ownOffersOld = ownOffers;
+			ownOffers = marktNeu.getOffersByName(name);
+			
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -131,7 +132,7 @@ public class Haendler implements Runnable {
 			//console.setForeground(Color.BLACK);
 			//console.append(date() + " Logged in\n");
 			if (update()) {
-				Vector<Angebot> ankauf, verkauf, mAlt, mNeu, recreate;
+				Vector<Angebot> ankauf, verkauf, recreate;
 				ankauf = marktNeu.getAnkauf();
 				verkauf = marktNeu.getVerkauf();
 				
@@ -141,34 +142,29 @@ public class Haendler implements Runnable {
 							if (a.getPrize() >= minPrize(a.getItem())) {
 								for (int i = 0; i <= a.getPrize() - minPrize(a.getItem()); i++) {
 									a.trade();
-									//console.setForeground(Color.GREEN);
-									ausgabe.println(a.tradeMessage());
 								}
+								dealsDone.add(a);
 							}
 						}
 					}
 				}
 				
-				if ((marktAlt != null) && marktNeu != null) {
-					mAlt = marktAlt.getOffersByName(name);
-					mNeu = marktNeu.getOffersByName(name);
-					recreate = terminatedOffers(mAlt, mNeu);
+				if ((ownOffersOld != null) && ownOffers != null) {
+					recreate = terminatedOffers(ownOffersOld, ownOffers);
 
 					for (Angebot a : recreate) {
-						//console.setForeground(Color.RED);
-						ausgabe.println("Sold " + a.getAmount() + " " + a.getItem() + " " + a.getPrize());
-						createOffer(a);
+						if (a.recreate)
+							createOffer(a);
 					}
 				}
 				
 				update();
-				ausgabe.setTable(marktNeu.getOffersByName(name));
+				controller.update();
 			}
 		}
 	}
 	
-	
-	private void createOffer(Angebot a) {
+	private boolean createOffer(Angebot a) {
 		URL url;
 		HttpURLConnection connection;
 		OutputStreamWriter writer;
@@ -198,11 +194,17 @@ public class Haendler implements Runnable {
 					connection.getInputStream()));
 			
 			//console.setForeground(Color.BLACK);
-			ausgabe.println("Created " + a.getAmount() + " " + a.getItem() + " " + a.getPrize());
+			
+			for ( String line; (line = reader.readLine()) != null; ) {
+				if (line.contains("Dein Angebot wurde erfolgreich erstellt.")) {
+					return true;
+				}
+			}
 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return false;
 	}
 	
 	
@@ -239,5 +241,15 @@ public class Haendler implements Runnable {
 	
 	public void setSell(String key, boolean value) {
 		zuordnung.put(key, value);
+	}
+
+	public Vector<Angebot> getOwnOffers() {
+		// TODO Auto-generated method stub
+		return ownOffers;
+	}
+
+	public void setRecreate(int row, boolean value) {
+		// TODO Auto-generated method stub
+		ownOffers.get(row).recreate = value;
 	}
 }
